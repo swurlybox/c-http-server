@@ -82,6 +82,21 @@ int main() {
         }
 
         printf("%s\n", recvbuf);
+        
+        /* TODO:
+         * After receiving the data (presumably the HTTP GET request), 
+         * we need to parse it! This will need to be its own method.
+         * 
+         * Once we know for sure its a valid HTTP request, the parser
+         * will respond with the appropriate response depending on the
+         * request. However, typically after accepting a connection, we'd
+         * fork a child process and then handle that request there. But
+         * single-threaded web server is okay for now, I'd rather not deal
+         * with reaping children right now.
+         *
+         * */
+
+
         close(rsrc.client_sock);
     }
    
