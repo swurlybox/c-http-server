@@ -17,7 +17,6 @@
 typedef struct {
     int serv_sock;
     int client_sock;
-    struct addrinfo *res;
 } resources_t;
 
 resources_t rsrc;
@@ -27,14 +26,13 @@ void sig_handler(int signo){
     printf("\ncleaning up resources...\n");
     close(rsrc.serv_sock);
     close(rsrc.client_sock);
-    freeaddrinfo(rsrc.res);
     exit(1);
 }
 
 /* Single-threaded listener on port 3000. */
 int main() {
-    struct addrinfo hints;  /* provided to getaddrinfo for specific criteria */
-    struct sockaddr_storage client_addr;    /* client socket info on accept */
+    struct addrinfo hints, *res; 
+    struct sockaddr_storage client_addr;
     char recvbuf[RECV_SZ];
     int addr_size = sizeof client_addr;
     signal(SIGINT, sig_handler);
@@ -45,25 +43,26 @@ int main() {
     hints.ai_flags      = AI_PASSIVE;   /* choose a local socket */
 
     printf("getting local socket addrinfo...\n");
-    if (getaddrinfo(NULL, PORT, &hints, &rsrc.res)) {
+    if (getaddrinfo(NULL, PORT, &hints, &res)) {
         printf("error with getaddrinfo()\n");
         exit(1);
     }
 
     printf("creating a local socket to handle incoming requests...\n");
-    rsrc.serv_sock = socket(rsrc.res->ai_family, rsrc.res->ai_socktype, 
-        rsrc.res->ai_protocol);
+    rsrc.serv_sock = socket(res->ai_family, res->ai_socktype, 
+        res->ai_protocol);
     if (rsrc.serv_sock < 0) {
         printf("error creating a socket\n");
         exit(1);
     }
 
     printf("binding local socket to a specific ip address and port...\n");
-    if (bind(rsrc.serv_sock, rsrc.res->ai_addr, rsrc.res->ai_addrlen) < 0) {
+    if (bind(rsrc.serv_sock, res->ai_addr, res->ai_addrlen) < 0) {
         printf("error binding the socket\n");
         exit(1);
     }
-
+    freeaddrinfo(res);
+    
     printf("listening on local socket for connections...\n");
     if (listen(rsrc.serv_sock, BACKLOG) < 0) {
         printf("error listening on socket\n");
@@ -89,6 +88,5 @@ int main() {
     printf("cleaning up resources...\n"); 
     close(rsrc.client_sock);
     close(rsrc.serv_sock);
-    freeaddrinfo(rsrc.res);
     return 0;
 }
